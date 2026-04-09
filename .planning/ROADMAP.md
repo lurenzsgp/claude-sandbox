@@ -5,7 +5,7 @@
 **Total phases:** 2
 **Requirements:** 14 v1 requirements
 
-## Phase 1 — Sandbox Isolation
+## Phase 1: Sandbox Isolation
 
 **Goal:** Users can launch Claude Code in an isolated Docker container with access only to specified repos, with global Claude configuration and secure API key injection.
 
@@ -32,7 +32,7 @@ Plans:
 
 ---
 
-## Phase 2 — Project Configuration
+## Phase 2: Project Configuration
 
 **Goal:** Users can bring project-level Claude configuration into the sandbox alongside global settings.
 
