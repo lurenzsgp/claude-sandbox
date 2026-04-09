@@ -5,10 +5,15 @@ import { SandboxError } from '../errors/index.js';
 
 const CONTAINER_SECRET_PATH = '/run/secrets/anthropic-api-key';
 
+// Stable path — no timestamp. The file persists while the container exists so
+// Docker can re-mount it on stop/start cycles. It is overwritten on each `start`
+// with the current key value.
+const KEY_FILE = 'api-key';
+
 export interface SecretMount {
   /** Bind spec string for Dockerode HostConfig.Binds */
   bindSpec: string;
-  /** Call in finally block to delete the temp file */
+  /** Delete the key file — call only when the container is being permanently removed */
   cleanup: () => void;
 }
 
@@ -22,19 +27,19 @@ export function injectApiKey(): SecretMount {
   }
 
   mkdirSync(CONFIG_DIR, { recursive: true });
-  const tempPath = join(CONFIG_DIR, `tmp-key-${Date.now()}`);
-  writeFileSync(tempPath, apiKey, { mode: 0o600, encoding: 'utf-8' });
+  const keyPath = join(CONFIG_DIR, KEY_FILE);
+  writeFileSync(keyPath, apiKey, { mode: 0o600, encoding: 'utf-8' });
 
   const cleanup = () => {
     try {
-      if (existsSync(tempPath)) unlinkSync(tempPath);
+      if (existsSync(keyPath)) unlinkSync(keyPath);
     } catch {
       // Best-effort cleanup — do not throw on cleanup failure
     }
   };
 
   return {
-    bindSpec: `${tempPath}:${CONTAINER_SECRET_PATH}:ro`,
+    bindSpec: `${keyPath}:${CONTAINER_SECRET_PATH}:ro`,
     cleanup,
   };
 }

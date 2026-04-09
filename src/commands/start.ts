@@ -81,8 +81,11 @@ export function registerStart(program: Command): void {
         }
       }
 
-      // Inject API key via secrets file (AUTH-01)
+      // Inject API key via secrets file (AUTH-01).
+      // The key file persists at a stable path so Docker can re-mount it on
+      // stop/start cycles. cleanup() is only called on failure.
       const secret = injectApiKey();
+      let started = false;
       try {
         const binds = [
           ...repoMounts.map(m => m.bindSpec),
@@ -109,6 +112,7 @@ export function registerStart(program: Command): void {
         });
 
         await container.start();
+        started = true;
 
         const now = new Date().toISOString();
         const state: SandboxState = {
@@ -123,8 +127,9 @@ export function registerStart(program: Command): void {
         console.log('Sandbox started.');
 
       } finally {
-        // Clean up the secrets temp file regardless of success or failure (AUTH-01)
-        secret.cleanup();
+        // Only clean up on failure — key file must persist while container exists
+        // so Docker can re-mount it after stop/start cycles.
+        if (!started) secret.cleanup();
       }
     });
 }

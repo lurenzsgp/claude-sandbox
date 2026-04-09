@@ -32,8 +32,9 @@ export function registerShell(program: Command): void {
         WorkingDir: '/workspace', // D-12: open at /workspace
       });
 
-      // Start the exec with PTY (stream: true required for piping)
-      const stream = await exec.start({ Tty: true, stdin: true } as any);
+      // hijack: true gives us the raw socket for bidirectional PTY I/O.
+      // Without it Dockerode returns a one-way stream and stdin is ignored.
+      const stream = await exec.start({ hijack: true, stdin: true } as any);
 
       // Put host stdin into raw mode so Claude Code's interactive TUI works correctly
       process.stdin.setRawMode(true);
