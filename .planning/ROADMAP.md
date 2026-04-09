@@ -11,6 +11,15 @@
 
 **Requirements:** CLI-01, CLI-02, CLI-03, CLI-04, CLI-05, CONT-01, CONT-02, CONT-03, CONT-04, MNT-01, MNT-02, AUTH-01
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Project scaffold: package.json, tsconfig, esbuild, Dockerfile, entrypoint.sh, CLI skeleton
+- [ ] 01-02-PLAN.md — Core infrastructure: typed errors, config, state manager, Docker client wrapper, secrets injector
+- [ ] 01-03-PLAN.md — Volume mount resolver: path normalization, ~/.claude ro bind, .claude-sandbox-ignore tmpfs shadows
+- [ ] 01-04-PLAN.md — Lifecycle commands: image builder + start/stop/restart/status wired into CLI
+- [ ] 01-05-PLAN.md — Shell command: PTY/TTY allocation, SIGWINCH propagation, human verification checkpoint
+
 ### Success Criteria
 - [ ] User can start a persistent sandbox container with selected repos using `claude-sandbox start --mount <path> --mount <path>`
 - [ ] User can interact with Claude Code inside the sandbox via `claude-sandbox shell` (interactive terminal)
