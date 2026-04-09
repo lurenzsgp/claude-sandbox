@@ -1,0 +1,28 @@
+{
+  "name": "claude-sandbox",
+  "version": "0.1.0",
+  "description": "Run Claude Code in an isolated Docker sandbox with selective repo access",
+  "type": "module",
+  "bin": {
+    "claude-sandbox": "dist/claude-sandbox.js"
+  },
+  "scripts": {
+    "build": "tsx esbuild.config.ts",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "commander": "14.0.3",
+    "dockerode": "4.0.10",
+    "ignore": "7.0.5"
+  },
+  "devDependencies": {
+    "@types/dockerode": "4.0.1",
+    "@types/node": "25.5.2",
+    "esbuild": "0.28.0",
+    "tsx": "4.21.0",
+    "typescript": "6.0.2",
+    "vitest": "4.1.4"
+  }
+}
