@@ -16,20 +16,20 @@
 
 ### Container
 
-- [ ] **CONT-01**: Container is persistent — state survives `stop` / `start` cycles (not `--rm`)
+- [x] **CONT-01**: Container is persistent — state survives `stop` / `start` cycles (not `--rm`)
 - [ ] **CONT-02**: Container user UID/GID matches host user so files created inside are accessible on the host
-- [ ] **CONT-03**: Docker socket mounting is blocked — the sandbox cannot access the host Docker daemon
+- [x] **CONT-03**: Docker socket mounting is blocked — the sandbox cannot access the host Docker daemon
 - [ ] **CONT-04**: Claude Code CLI is pre-installed inside the container image
 
 ### Mounts
 
 - [ ] **MNT-01**: Each `--mount <path>` flag bind-mounts the specified host directory into the container at a predictable path (e.g. `/workspace/<folder-name>`)
-- [ ] **MNT-02**: `~/.claude/` is mounted read-only inside the container so global Claude settings, hooks, commands, and memory are available
+- [x] **MNT-02**: `~/.claude/` is mounted read-only inside the container so global Claude settings, hooks, commands, and memory are available
 - [ ] **MNT-03**: A `CLAUDE.md` file specified via `--claude-md <path>` is mounted into the container at the project root (or another well-known location Claude reads)
 
 ### Auth
 
-- [ ] **AUTH-01**: `ANTHROPIC_API_KEY` from the host environment is injected into the container via a secrets file (not as a plain env var) to avoid exposure in `docker inspect`
+- [x] **AUTH-01**: `ANTHROPIC_API_KEY` from the host environment is injected into the container via a secrets file (not as a plain env var) to avoid exposure in `docker inspect`
 
 ## v2 Requirements
 
@@ -71,14 +71,14 @@
 | CLI-04 | Phase 1 | Pending |
 | CLI-05 | Phase 1 | Pending |
 | CLI-06 | Phase 2 | Pending |
-| CONT-01 | Phase 1 | Pending |
+| CONT-01 | Phase 1 | Complete |
 | CONT-02 | Phase 1 | Pending |
-| CONT-03 | Phase 1 | Pending |
+| CONT-03 | Phase 1 | Complete |
 | CONT-04 | Phase 1 | Pending |
 | MNT-01 | Phase 1 | Pending |
-| MNT-02 | Phase 1 | Pending |
+| MNT-02 | Phase 1 | Complete |
 | MNT-03 | Phase 2 | Pending |
-| AUTH-01 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 14 total
