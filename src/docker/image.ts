@@ -1,31 +1,25 @@
 import { userInfo } from 'os';
-import { resolve, dirname } from 'path';
+import { resolve } from 'path';
 import { existsSync } from 'fs';
-import { fileURLToPath } from 'url';
 import Dockerode from 'dockerode';
 
 export const IMAGE_TAG = 'claude-sandbox:latest';
 
-// Resolve project root by walking up from this file until we find the Dockerfile
+// Resolve project root by walking up from this file until we find the Dockerfile.
+// esbuild bundles to CJS which provides __dirname as the directory of the bundle output.
+// We walk up from there to find the project root containing the Dockerfile.
 function findProjectRoot(): string {
-  // When running via tsx (development): __dirname is src/docker/
-  // When bundled by esbuild (CJS): __dirname is wherever esbuild places the bundle
-  // Walk up a reasonable number of levels to find Dockerfile
-  let dir: string;
-  try {
-    dir = dirname(fileURLToPath(import.meta.url));
-  } catch {
-    // Fallback for CJS bundles where import.meta.url may not be standard
-    dir = __dirname;
-  }
+  // __dirname is available in CJS output (esbuild injects it)
+  // In tsx dev mode, __dirname is also available
+  let dir = __dirname;
   for (let i = 0; i < 8; i++) {
     if (existsSync(resolve(dir, 'Dockerfile'))) return dir;
     const parent = resolve(dir, '..');
     if (parent === dir) break; // filesystem root
     dir = parent;
   }
-  // Last resort — return two levels up from src/docker/
-  return resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+  // Last resort — walk up three levels from wherever the bundle landed
+  return resolve(__dirname, '../../..');
 }
 
 /**

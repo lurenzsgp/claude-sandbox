@@ -1,0 +1,130 @@
+import type { Command } from 'commander';
+import { resolve } from 'path';
+import { createDockerClient, validateMounts } from '../docker/client.js';
+import { resolveMount, resolveClaudeConfigMount, resolveBlockedPaths } from '../docker/mounts.js';
+import { ensureImage, IMAGE_TAG } from '../docker/image.js';
+import { injectApiKey } from '../secrets/injector.js';
+import { readState, writeState, reconcileState, type SandboxState } from '../state/manager.js';
+import { loadConfig } from '../config/loader.js';
+
+const CONTAINER_NAME = 'claude-sandbox';
+
+function mountsMatch(stored: string[], requested: string[]): boolean {
+  const normalize = (p: string[]) => [...p].map(x => resolve(x)).sort().join('|');
+  return normalize(stored) === normalize(requested);
+}
+
+export function registerStart(program: Command): void {
+  program
+    .command('start')
+    .description('Start the Claude sandbox container')
+    .requiredOption(
+      '-m, --mount <path>',
+      'Host directory to mount (can be specified multiple times)',
+      (val: string, prev: string[]) => [...prev, val],
+      [] as string[]
+    )
+    .option('--recreate', 'Recreate the container even if it already exists (resets container state)')
+    .action(async (opts: { mount: string[]; recreate?: boolean }) => {
+      const docker = createDockerClient();
+      const config = loadConfig();
+      const requestedPaths = opts.mount.map(p => resolve(p));
+
+      // Validate mounts before any Docker call (CONT-03, D-06)
+      validateMounts(requestedPaths);
+
+      // Resolve mount specs (MNT-01, MNT-02)
+      const repoMounts = requestedPaths.map(resolveMount);
+      const claudeMount = resolveClaudeConfigMount();
+
+      // Check .claude-sandbox-ignore for each repo mount (D-03, D-04, D-05)
+      const tmpfsMounts = repoMounts.flatMap(m => resolveBlockedPaths(m, config.monorepoRoot));
+
+      // Ensure the image exists (build if first run — D-07, D-08)
+      await ensureImage(docker);
+
+      // Handle existing container state
+      let existingState = readState();
+      if (existingState) {
+        const state = await reconcileState(existingState, docker);
+
+        if (state.status !== 'not_found') {
+          // Check if mounts match (D-10, D-11)
+          if (!mountsMatch(state.mounts, requestedPaths)) {
+            if (!opts.recreate) {
+              console.error('Mount mismatch!');
+              console.error('  Current mounts:', state.mounts.join(', '));
+              console.error('  Requested mounts:', requestedPaths.join(', '));
+              console.error('\nRun `claude-sandbox start --recreate` to rebuild with new mounts (container state will be lost).');
+              process.exit(1);
+            }
+            // --recreate: remove existing container
+            const existing = docker.getContainer(state.containerId);
+            try { await existing.stop(); } catch { /* already stopped */ }
+            await existing.remove();
+            existingState = null;
+          } else if (state.status === 'running') {
+            console.log('Sandbox is already running.');
+            return;
+          } else {
+            // Same mounts, container stopped — restart it silently (D-11)
+            const existing = docker.getContainer(state.containerId);
+            await existing.start();
+            const now = new Date().toISOString();
+            writeState({ ...state, status: 'running', lastStartedAt: now });
+            console.log('Sandbox started.');
+            return;
+          }
+        } else {
+          // Container was deleted externally — proceed to create fresh
+          existingState = null;
+        }
+      }
+
+      // Inject API key via secrets file (AUTH-01)
+      const secret = injectApiKey();
+      try {
+        const binds = [
+          ...repoMounts.map(m => m.bindSpec),
+          claudeMount.bindSpec,
+          secret.bindSpec,
+        ];
+
+        const container = await docker.createContainer({
+          Image: IMAGE_TAG,
+          name: CONTAINER_NAME,
+          WorkingDir: '/workspace',
+          Tty: true,
+          OpenStdin: true,
+          Env: [
+            'CLAUDE_SANDBOX=1',
+            // PS1 is set in entrypoint; also set here as a fallback (D-13)
+            'PS1=[sandbox] \\u@\\h:\\w\\$ ',
+          ],
+          HostConfig: {
+            Binds: binds,
+            Mounts: tmpfsMounts,
+            SecurityOpt: ['no-new-privileges:true'],
+          },
+        });
+
+        await container.start();
+
+        const now = new Date().toISOString();
+        const state: SandboxState = {
+          version: '1',
+          containerId: container.id,
+          status: 'running',
+          mounts: requestedPaths,
+          createdAt: now,
+          lastStartedAt: now,
+        };
+        writeState(state);
+        console.log('Sandbox started.');
+
+      } finally {
+        // Clean up the secrets temp file regardless of success or failure (AUTH-01)
+        secret.cleanup();
+      }
+    });
+}

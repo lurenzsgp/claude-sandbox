@@ -1,4 +1,8 @@
 import { Command } from 'commander';
+import { registerStart } from './commands/start.js';
+import { registerStop } from './commands/stop.js';
+import { registerRestart } from './commands/restart.js';
+import { registerStatus } from './commands/status.js';
 
 const program = new Command();
 
@@ -7,7 +11,15 @@ program
   .description('Run Claude Code in an isolated Docker sandbox with selective repo access')
   .version('0.1.0');
 
-// Commands are registered in Plan 04 (lifecycle) and Plan 05 (shell)
-// This skeleton is here so the build system can be verified independently
+registerStart(program);
+registerStop(program);
+registerRestart(program);
+registerStatus(program);
 
-program.parse(process.argv);
+program.parseAsync(process.argv).catch((err: Error) => {
+  console.error('Error:', err.message);
+  if ('fix' in err && (err as Error & { fix?: string }).fix) {
+    console.error('Fix:', (err as Error & { fix?: string }).fix);
+  }
+  process.exit(1);
+});
