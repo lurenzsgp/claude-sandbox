@@ -7,17 +7,17 @@
 
 ### CLI
 
-- [ ] **CLI-01**: User can launch the sandbox by running `claude-sandbox start` with one or more `--mount <path>` flags specifying monorepo subfolder paths to expose
-- [ ] **CLI-02**: User can stop the sandbox with `claude-sandbox stop`
-- [ ] **CLI-03**: User can check sandbox state with `claude-sandbox status` (shows container ID, uptime, mounted paths)
-- [ ] **CLI-04**: User can restart the sandbox with `claude-sandbox restart`
+- [x] **CLI-01**: User can launch the sandbox by running `claude-sandbox start` with one or more `--mount <path>` flags specifying monorepo subfolder paths to expose
+- [x] **CLI-02**: User can stop the sandbox with `claude-sandbox stop`
+- [x] **CLI-03**: User can check sandbox state with `claude-sandbox status` (shows container ID, uptime, mounted paths)
+- [x] **CLI-04**: User can restart the sandbox with `claude-sandbox restart`
 - [ ] **CLI-05**: User can open an interactive shell inside the sandbox with `claude-sandbox shell` (drops into terminal where they can run `claude`)
 - [ ] **CLI-06**: User can specify a path to a `CLAUDE.md` file via `--claude-md <path>` flag to mount it at a known location inside the container
 
 ### Container
 
 - [x] **CONT-01**: Container is persistent — state survives `stop` / `start` cycles (not `--rm`)
-- [ ] **CONT-02**: Container user UID/GID matches host user so files created inside are accessible on the host
+- [x] **CONT-02**: Container user UID/GID matches host user so files created inside are accessible on the host
 - [x] **CONT-03**: Docker socket mounting is blocked — the sandbox cannot access the host Docker daemon
 - [ ] **CONT-04**: Claude Code CLI is pre-installed inside the container image
 
@@ -65,14 +65,14 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CLI-01 | Phase 1 | Pending |
-| CLI-02 | Phase 1 | Pending |
-| CLI-03 | Phase 1 | Pending |
-| CLI-04 | Phase 1 | Pending |
+| CLI-01 | Phase 1 | Complete |
+| CLI-02 | Phase 1 | Complete |
+| CLI-03 | Phase 1 | Complete |
+| CLI-04 | Phase 1 | Complete |
 | CLI-05 | Phase 1 | Pending |
 | CLI-06 | Phase 2 | Pending |
 | CONT-01 | Phase 1 | Complete |
-| CONT-02 | Phase 1 | Pending |
+| CONT-02 | Phase 1 | Complete |
 | CONT-03 | Phase 1 | Complete |
 | CONT-04 | Phase 1 | Pending |
 | MNT-01 | Phase 1 | Complete |
