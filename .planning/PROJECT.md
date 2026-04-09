@@ -12,18 +12,17 @@ Claude gets exactly the repos and configuration you give it — nothing more, no
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Docker-based container that isolates Claude from the host filesystem — Validated in Phase 1: sandbox-isolation
+- [x] CLI tool to start/stop/exec into the container with repo selection — Validated in Phase 1: sandbox-isolation
+- [x] Selective bind-mounts: specified repos mounted as volumes inside the container — Validated in Phase 1: sandbox-isolation
+- [x] `~/.claude/` mounted from host so global Claude settings are available inside the container — Validated in Phase 1: sandbox-isolation
+- [x] `ANTHROPIC_API_KEY` injected from host env at launch via secrets file — Validated in Phase 1: sandbox-isolation
+- [x] Persistent container — state survives across sessions — Validated in Phase 1: sandbox-isolation
+- [x] Claude CLI pre-installed and ready to run inside the container — Validated in Phase 1: sandbox-isolation
 
 ### Active
 
-- [ ] Docker-based container that isolates Claude from the host filesystem
-- [ ] CLI tool to start/stop/exec into the container with repo selection (e.g. `claude-sandbox start --repo payments --repo auth`)
-- [ ] Selective bind-mounts: specified repos from the monorepo are mounted as volumes inside the container
-- [ ] `~/.claude/` mounted from host so global Claude settings, hooks, commands, and memory are available inside the container
 - [ ] Project-level `CLAUDE.md` files are picked up automatically (they live inside the mounted repos)
-- [ ] `ANTHROPIC_API_KEY` injected from host env at launch — no interactive login needed
-- [ ] Persistent container — state survives across sessions (not ephemeral)
-- [ ] Claude CLI pre-installed and ready to run inside the container
 
 ### Out of Scope
 
@@ -71,4 +70,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-08 after initialization*
+*Last updated: 2026-04-09 — Phase 1 complete*
