@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 01-04-PLAN.md
+stopped_at: "Checkpoint: 01-05-PLAN.md Task 2 — awaiting human verification of interactive shell"
 last_updated: "2026-04-09T20:18:32.707Z"
 progress:
   total_phases: 1
@@ -24,9 +24,9 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 
 ## Current Status
 
-Phase 1, Plans 01-04 complete. Plan 05 (shell command) ready to execute.
+Phase 1, Plans 01-04 complete. Plan 05 (shell command): Task 1 complete (e78c864), awaiting human verification at checkpoint (Task 2).
 
-**Stopped at:** Completed 01-04-PLAN.md
+**Stopped at:** Checkpoint: 01-05-PLAN.md Task 2 — awaiting human verification of interactive shell
 
 ## Phase Status
 
