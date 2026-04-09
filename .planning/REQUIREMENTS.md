@@ -11,7 +11,7 @@
 - [x] **CLI-02**: User can stop the sandbox with `claude-sandbox stop`
 - [x] **CLI-03**: User can check sandbox state with `claude-sandbox status` (shows container ID, uptime, mounted paths)
 - [x] **CLI-04**: User can restart the sandbox with `claude-sandbox restart`
-- [ ] **CLI-05**: User can open an interactive shell inside the sandbox with `claude-sandbox shell` (drops into terminal where they can run `claude`)
+- [x] **CLI-05**: User can open an interactive shell inside the sandbox with `claude-sandbox shell` (drops into terminal where they can run `claude`)
 - [ ] **CLI-06**: User can specify a path to a `CLAUDE.md` file via `--claude-md <path>` flag to mount it at a known location inside the container
 
 ### Container
@@ -69,7 +69,7 @@
 | CLI-02 | Phase 1 | Complete |
 | CLI-03 | Phase 1 | Complete |
 | CLI-04 | Phase 1 | Complete |
-| CLI-05 | Phase 1 | Pending |
+| CLI-05 | Phase 1 | Complete |
 | CLI-06 | Phase 2 | Pending |
 | CONT-01 | Phase 1 | Complete |
 | CONT-02 | Phase 1 | Complete |

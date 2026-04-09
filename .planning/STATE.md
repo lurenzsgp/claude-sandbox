@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: "Checkpoint: 01-05-PLAN.md Task 2 — awaiting human verification of interactive shell"
-last_updated: "2026-04-09T20:18:32.707Z"
+status: phase_complete
+stopped_at: "Phase 01 complete — all 5 plans executed and human-verified"
+last_updated: "2026-04-09"
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State — Claude Sandbox
@@ -24,15 +24,15 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 
 ## Current Status
 
-Phase 1, Plans 01-04 complete. Plan 05 (shell command): Task 1 complete (e78c864), awaiting human verification at checkpoint (Task 2).
+Phase 1 complete. All 5 plans executed and human-verified. Full 5-command CLI working end-to-end: start, stop, restart, status, shell. PTY shell verified with real TTY, secrets injection, Docker socket isolation.
 
-**Stopped at:** Checkpoint: 01-05-PLAN.md Task 2 — awaiting human verification of interactive shell
+**Stopped at:** Phase 01 complete — all 5 plans executed and human-verified
 
 ## Phase Status
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 1 | Sandbox Isolation | In Progress (4/5 plans complete) |
+| 1 | Sandbox Isolation | Complete (5/5 plans) |
 | 2 | Project Configuration | Pending Phase 1 |
 
 ## Accumulated Context
@@ -52,6 +52,8 @@ Phase 1, Plans 01-04 complete. Plan 05 (shell command): Task 1 complete (e78c864
 - **ignore@7.0.5 for .claude-sandbox-ignore:** Used over custom regex for spec-correct gitignore parsing (negation, **, escaping) (Plan 01-03)
 - **__dirname over import.meta.url in image.ts:** esbuild CJS output makes import.meta.url empty; __dirname is correctly injected by esbuild for CJS bundles (Plan 01-04)
 - **No duplicate shebang in cli.ts:** esbuild banner adds shebang; source file must not also have one or the built file gets two shebangs causing SyntaxError (Plan 01-04)
+- **hijack:true in exec.start() for Dockerode PTY:** Tty:true alone returns a read-only stream; hijack:true is required for bidirectional stdin/stdout socket (Plan 01-05)
+- **Stable secrets file path:** API key file must persist between stop/start cycles; timestamp-based temp files cause restart failures when deleted after container create (Plan 01-05)
 
 ### Critical Pitfalls Fixed in Phase 1
 
