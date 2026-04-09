@@ -23,7 +23,7 @@
 
 ### Mounts
 
-- [ ] **MNT-01**: Each `--mount <path>` flag bind-mounts the specified host directory into the container at a predictable path (e.g. `/workspace/<folder-name>`)
+- [x] **MNT-01**: Each `--mount <path>` flag bind-mounts the specified host directory into the container at a predictable path (e.g. `/workspace/<folder-name>`)
 - [x] **MNT-02**: `~/.claude/` is mounted read-only inside the container so global Claude settings, hooks, commands, and memory are available
 - [ ] **MNT-03**: A `CLAUDE.md` file specified via `--claude-md <path>` is mounted into the container at the project root (or another well-known location Claude reads)
 
@@ -75,7 +75,7 @@
 | CONT-02 | Phase 1 | Pending |
 | CONT-03 | Phase 1 | Complete |
 | CONT-04 | Phase 1 | Pending |
-| MNT-01 | Phase 1 | Pending |
+| MNT-01 | Phase 1 | Complete |
 | MNT-02 | Phase 1 | Complete |
 | MNT-03 | Phase 2 | Pending |
 | AUTH-01 | Phase 1 | Complete |
