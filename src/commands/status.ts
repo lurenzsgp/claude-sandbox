@@ -35,5 +35,8 @@ export function registerStatus(program: Command): void {
       for (const m of state.mounts) {
         console.log(`  ${m}`);
       }
+      if (state.claudeMd) {
+        console.log(`CLAUDE.md:  ${state.claudeMd} → /workspace/CLAUDE.md`);
+      }
     });
 }
