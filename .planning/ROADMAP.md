@@ -38,11 +38,11 @@ Plans:
 
 **Requirements:** CLI-06, MNT-03
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 02-01-PLAN.md — Foundation: resolveClaudeMdMount() in mounts.ts, claudeMd field on SandboxState, unit tests
-- [ ] 02-02-PLAN.md — CLI integration: --claude-md option in start.ts, conflict detection, state persistence, status display
+- [x] 02-02-PLAN.md — CLI integration: --claude-md option in start.ts, conflict detection, state persistence, status display
 
 ### Success Criteria
 - [ ] User can mount a project-level `CLAUDE.md` file via `claude-sandbox start --claude-md <path>`
