@@ -75,6 +75,30 @@ export function resolveClaudeConfigMount(): MountSpec {
 }
 
 /**
+ * Resolve a host CLAUDE.md path to a Dockerode bind spec.
+ * Mount target is /workspace/CLAUDE.md (container working directory — D-01).
+ * Read-only mount, consistent with ~/.claude/ pattern (D-02).
+ * Throws SandboxError if the source file does not exist.
+ */
+export function resolveClaudeMdMount(hostPathRaw: string): MountSpec {
+  const hostPath = resolve(hostPathRaw);
+
+  if (!existsSync(hostPath)) {
+    throw new SandboxError(
+      `CLAUDE.md not found at '${hostPath}'.`,
+      `Check the path is correct and the file exists.`
+    );
+  }
+
+  const containerPath = '/workspace/CLAUDE.md';
+  return {
+    bindSpec: `${hostPath}:${containerPath}:ro`,
+    hostPath,
+    containerPath,
+  };
+}
+
+/**
  * Walk up from mountHostPath to monorepoRoot (or fs root if null),
  * collecting .claude-sandbox-ignore files (D-05).
  */

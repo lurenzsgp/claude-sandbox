@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join, basename } from 'path';
 import { tmpdir } from 'os';
-import { resolveMount, resolveClaudeConfigMount, resolveBlockedPaths } from './mounts.js';
+import { resolveMount, resolveClaudeConfigMount, resolveBlockedPaths, resolveClaudeMdMount } from './mounts.js';
 import { SandboxError } from '../errors/index.js';
 
 describe('resolveMount', () => {
@@ -85,5 +85,41 @@ describe('resolveBlockedPaths', () => {
       expect(spec.Type).toBe('tmpfs');
       expect(spec.TmpfsOptions.Mode).toBe(0o555);
     }
+  });
+});
+
+describe('resolveClaudeMdMount', () => {
+  let testFile: string;
+
+  beforeEach(() => {
+    testFile = join(tmpdir(), `claude-md-test-${Date.now()}.md`);
+    writeFileSync(testFile, '# Test CLAUDE.md\n');
+  });
+
+  afterEach(() => {
+    rmSync(testFile, { force: true });
+  });
+
+  it('returns a ro bind spec targeting /workspace/CLAUDE.md', () => {
+    const result = resolveClaudeMdMount(testFile);
+    expect(result.bindSpec).toBe(`${testFile}:/workspace/CLAUDE.md:ro`);
+    expect(result.containerPath).toBe('/workspace/CLAUDE.md');
+    expect(result.hostPath).toBe(testFile);
+  });
+
+  it('resolves relative paths to absolute', () => {
+    // process.cwd() based relative path — use tmpdir absolute path as baseline
+    const result = resolveClaudeMdMount(testFile);
+    expect(result.hostPath).toMatch(/^\//);
+  });
+
+  it('throws SandboxError when file does not exist', () => {
+    expect(() => resolveClaudeMdMount('/nonexistent/path/CLAUDE.md')).toThrow(SandboxError);
+  });
+
+  it('thrown SandboxError message contains "CLAUDE.md not found"', () => {
+    let caught: SandboxError | undefined;
+    try { resolveClaudeMdMount('/nonexistent/CLAUDE.md'); } catch (e) { caught = e as SandboxError; }
+    expect(caught?.message).toContain('CLAUDE.md not found');
   });
 });
