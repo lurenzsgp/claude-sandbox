@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import { resolve } from 'path';
 import { createDockerClient, validateMounts } from '../docker/client.js';
-import { resolveMount, resolveClaudeConfigMount, resolveBlockedPaths } from '../docker/mounts.js';
+import { resolveMount, resolveClaudeConfigMount, resolveBlockedPaths, resolveClaudeMdMount, type MountSpec } from '../docker/mounts.js';
 import { ensureImage, IMAGE_TAG } from '../docker/image.js';
 import { injectApiKey } from '../secrets/injector.js';
 import { readState, writeState, reconcileState, type SandboxState } from '../state/manager.js';
@@ -25,7 +25,8 @@ export function registerStart(program: Command): void {
       [] as string[]
     )
     .option('--recreate', 'Recreate the container even if it already exists (resets container state)')
-    .action(async (opts: { mount: string[]; recreate?: boolean }) => {
+    .option('--claude-md <path>', 'Path to project CLAUDE.md to mount at /workspace/CLAUDE.md (read-only)')
+    .action(async (opts: { mount: string[]; recreate?: boolean; claudeMd?: string }) => {
       const docker = createDockerClient();
       const config = loadConfig();
       const requestedPaths = opts.mount.map(p => resolve(p));
@@ -39,6 +40,21 @@ export function registerStart(program: Command): void {
 
       // Check .claude-sandbox-ignore for each repo mount (D-03, D-04, D-05)
       const tmpfsMounts = repoMounts.flatMap(m => resolveBlockedPaths(m, config.monorepoRoot));
+
+      // Resolve optional CLAUDE.md mount (CLI-06, D-01, D-02)
+      let claudeMdMount: MountSpec | null = null;
+      if (opts.claudeMd) {
+        claudeMdMount = resolveClaudeMdMount(opts.claudeMd);
+        // Conflict detection (D-03, D-04): warn if CLAUDE.md is inside a mounted repo
+        for (const repo of repoMounts) {
+          if (claudeMdMount.hostPath.startsWith(repo.hostPath + '/')) {
+            console.log(
+              `Note: CLAUDE.md is already accessible via ${repo.containerPath}/CLAUDE.md — also mounting at /workspace/CLAUDE.md for global scope.`
+            );
+            break;
+          }
+        }
+      }
 
       // Ensure the image exists (build if first run — D-07, D-08)
       await ensureImage(docker);
@@ -90,6 +106,7 @@ export function registerStart(program: Command): void {
         const binds = [
           ...repoMounts.map(m => m.bindSpec),
           claudeMount.bindSpec,
+          ...(claudeMdMount ? [claudeMdMount.bindSpec] : []),
           secret.bindSpec,
         ];
 
@@ -120,6 +137,7 @@ export function registerStart(program: Command): void {
           containerId: container.id,
           status: 'running',
           mounts: requestedPaths,
+          claudeMd: claudeMdMount ? claudeMdMount.hostPath : null,  // D-05
           createdAt: now,
           lastStartedAt: now,
         };
