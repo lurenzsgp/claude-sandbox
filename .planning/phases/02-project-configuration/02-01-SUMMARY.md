@@ -5,7 +5,7 @@ subsystem: docker-mounts, state-manager
 tags: [mounts, state, typescript, tdd]
 dependency_graph:
   requires: []
-  provides: [resolveClaudeMdMount, SandboxState.claudeMd]
+  provides: [CLI-06, MNT-03, resolveClaudeMdMount, SandboxState.claudeMd]
   affects: [src/commands/start.ts]
 tech_stack:
   added: []

@@ -19,7 +19,7 @@
 - [x] **CONT-01**: Container is persistent — state survives `stop` / `start` cycles (not `--rm`)
 - [x] **CONT-02**: Container user UID/GID matches host user so files created inside are accessible on the host
 - [x] **CONT-03**: Docker socket mounting is blocked — the sandbox cannot access the host Docker daemon
-- [ ] **CONT-04**: Claude Code CLI is pre-installed inside the container image
+- [x] **CONT-04**: Claude Code CLI is pre-installed inside the container image
 
 ### Mounts
 
@@ -74,7 +74,7 @@
 | CONT-01 | Phase 1 | Complete |
 | CONT-02 | Phase 1 | Complete |
 | CONT-03 | Phase 1 | Complete |
-| CONT-04 | Phase 1 | Pending |
+| CONT-04 | Phase 1 | Complete |
 | MNT-01 | Phase 1 | Complete |
 | MNT-02 | Phase 1 | Complete |
 | MNT-03 | Phase 2 | Complete |

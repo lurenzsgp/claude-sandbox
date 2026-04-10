@@ -21,14 +21,14 @@ Plans:
 - [x] 01-05-PLAN.md — Shell command: PTY/TTY allocation, SIGWINCH propagation, human verification checkpoint
 
 ### Success Criteria
-- [ ] User can start a persistent sandbox container with selected repos using `claude-sandbox start --mount <path> --mount <path>`
-- [ ] User can interact with Claude Code inside the sandbox via `claude-sandbox shell` (interactive terminal)
-- [ ] User can check sandbox state with `claude-sandbox status` and restart with `claude-sandbox restart`
-- [ ] Global Claude config from `~/.claude/` is available inside the sandbox (read-only)
-- [ ] API key is securely injected from host environment (not exposed in `docker inspect`)
-- [ ] Container state persists across `stop` / `start` cycles without losing files or state
-- [ ] Files created inside container are editable on host (UID/GID match)
-- [ ] Sandbox cannot access Docker socket or other host resources (isolation enforced)
+- [x] User can start a persistent sandbox container with selected repos using `claude-sandbox start --mount <path> --mount <path>`
+- [x] User can interact with Claude Code inside the sandbox via `claude-sandbox shell` (interactive terminal)
+- [x] User can check sandbox state with `claude-sandbox status` and restart with `claude-sandbox restart`
+- [x] Global Claude config from `~/.claude/` is available inside the sandbox (read-only)
+- [x] API key is securely injected from host environment (not exposed in `docker inspect`)
+- [x] Container state persists across `stop` / `start` cycles without losing files or state
+- [x] Files created inside container are editable on host (UID/GID match)
+- [x] Sandbox cannot access Docker socket or other host resources (isolation enforced)
 
 ---
 
@@ -45,6 +45,6 @@ Plans:
 - [x] 02-02-PLAN.md — CLI integration: --claude-md option in start.ts, conflict detection, state persistence, status display
 
 ### Success Criteria
-- [ ] User can mount a project-level `CLAUDE.md` file via `claude-sandbox start --claude-md <path>`
-- [ ] Project-specific Claude configuration is available inside the sandbox at a location Claude reads automatically
-- [ ] Both global `~/.claude/` and project `CLAUDE.md` are active inside the sandbox without conflicts
+- [x] User can mount a project-level `CLAUDE.md` file via `claude-sandbox start --claude-md <path>`
+- [x] Project-specific Claude configuration is available inside the sandbox at a location Claude reads automatically
+- [x] Both global `~/.claude/` and project `CLAUDE.md` are active inside the sandbox without conflicts

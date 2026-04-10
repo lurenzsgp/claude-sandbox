@@ -5,7 +5,7 @@ subsystem: cli-commands
 tags: [cli, docker-mounts, state, start-command, status-command]
 dependency_graph:
   requires: [resolveClaudeMdMount, SandboxState.claudeMd]
-  provides: [--claude-md CLI option, claudeMd state persistence, claudeMd status display]
+  provides: [CLI-06, MNT-03, --claude-md CLI option, claudeMd state persistence, claudeMd status display]
   affects: [src/commands/start.ts, src/commands/status.ts]
 tech_stack:
   added: []
