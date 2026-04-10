@@ -22,7 +22,7 @@ Claude gets exactly the repos and configuration you give it — nothing more, no
 
 ### Active
 
-- [ ] Project-level `CLAUDE.md` files are picked up automatically (they live inside the mounted repos)
+- [x] User can supply a custom project `CLAUDE.md` via `--claude-md <path>` and have it mounted read-only at `/workspace/CLAUDE.md` inside the sandbox — Validated in Phase 2: project-configuration
 
 ### Out of Scope
 
@@ -70,4 +70,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-09 — Phase 1 complete*
+*Last updated: 2026-04-10 — Phase 2 complete*
