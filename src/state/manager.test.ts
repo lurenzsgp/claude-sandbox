@@ -41,3 +41,42 @@ describe('reconcileState', () => {
     expect(result.status).toBe('stopped');
   });
 });
+
+describe('SandboxState claudeMd persistence', () => {
+  beforeEach(() => {
+    try { unlinkSync(STATE_PATH); } catch { /* ok */ }
+  });
+
+  afterEach(() => {
+    try { unlinkSync(STATE_PATH); } catch { /* ok */ }
+  });
+
+  it('persists claudeMd string through write/read round-trip', () => {
+    const state: SandboxState = {
+      ...SAMPLE_STATE,
+      claudeMd: '/abs/path/to/CLAUDE.md',
+    };
+    writeState(state);
+    const loaded = readState();
+    expect(loaded?.claudeMd).toBe('/abs/path/to/CLAUDE.md');
+  });
+
+  it('persists claudeMd null through write/read round-trip', () => {
+    const state: SandboxState = {
+      ...SAMPLE_STATE,
+      claudeMd: null,
+    };
+    writeState(state);
+    const loaded = readState();
+    expect(loaded?.claudeMd).toBeNull();
+  });
+
+  it('state without claudeMd field deserializes without error (backward compat)', () => {
+    // Write state without claudeMd (as old code would)
+    const { claudeMd: _omit, ...stateWithoutClaudeMd } = { ...SAMPLE_STATE, claudeMd: undefined };
+    writeState(stateWithoutClaudeMd as SandboxState);
+    const loaded = readState();
+    expect(loaded).not.toBeNull();
+    expect(loaded?.claudeMd).toBeUndefined();
+  });
+});

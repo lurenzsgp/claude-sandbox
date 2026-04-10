@@ -13,6 +13,8 @@ export interface SandboxState {
   status: ContainerStatus;
   /** Absolute host paths of mounted repos */
   mounts: string[];
+  /** Resolved absolute path to project CLAUDE.md, or null if not mounted (D-05) */
+  claudeMd?: string | null;
   createdAt: string;
   lastStartedAt: string;
 }
