@@ -1,11 +1,10 @@
 import type { Command } from 'commander';
 import { resolve } from 'path';
 import { createDockerClient, validateMounts } from '../docker/client.js';
-import { resolveMount, resolveClaudeConfigMount, resolveBlockedPaths, resolveClaudeMdMount, type MountSpec } from '../docker/mounts.js';
+import { resolveMount, resolveClaudeConfigMount, resolveClaudeConfigJsonMount, readSandboxConfig, resolveWhitelistMasks, resolveClaudeMdMount, type MountSpec } from '../docker/mounts.js';
 import { ensureImage, IMAGE_TAG } from '../docker/image.js';
 import { injectApiKey } from '../secrets/injector.js';
 import { readState, writeState, reconcileState, type SandboxState } from '../state/manager.js';
-import { loadConfig } from '../config/loader.js';
 
 const CONTAINER_NAME = 'claude-sandbox';
 
@@ -28,7 +27,6 @@ export function registerStart(program: Command): void {
     .option('--claude-md <path>', 'Path to project CLAUDE.md to mount at /workspace/CLAUDE.md (read-only)')
     .action(async (opts: { mount: string[]; recreate?: boolean; claudeMd?: string }) => {
       const docker = createDockerClient();
-      const config = loadConfig();
       const requestedPaths = opts.mount.map(p => resolve(p));
 
       // Validate mounts before any Docker call (CONT-03, D-06)
@@ -37,9 +35,14 @@ export function registerStart(program: Command): void {
       // Resolve mount specs (MNT-01, MNT-02)
       const repoMounts = requestedPaths.map(resolveMount);
       const claudeMount = resolveClaudeConfigMount();
+      const claudeJsonMount = resolveClaudeConfigJsonMount();
 
-      // Check .claude-sandbox-ignore for each repo mount (D-03, D-04, D-05)
-      const tmpfsMounts = repoMounts.flatMap(m => resolveBlockedPaths(m, config.monorepoRoot));
+      // Whitelist-based masking: read .claude-sandbox.yml from each repo root,
+      // tmpfs all subdirectories not in the include list (preserves tree structure).
+      const tmpfsMounts = repoMounts.flatMap(m => {
+        const sandboxConfig = readSandboxConfig(m.hostPath);
+        return resolveWhitelistMasks(m, sandboxConfig.include);
+      });
 
       // Resolve optional CLAUDE.md mount (CLI-06, D-01, D-02)
       let claudeMdMount: MountSpec | null = null;
@@ -79,6 +82,12 @@ export function registerStart(program: Command): void {
             try { await existing.stop(); } catch { /* already stopped */ }
             await existing.remove();
             existingState = null;
+          } else if (opts.recreate) {
+            // --recreate with same mounts (e.g. changing --claude-md)
+            const existing = docker.getContainer(state.containerId);
+            try { await existing.stop(); } catch { /* already stopped */ }
+            await existing.remove();
+            existingState = null;
           } else if (state.status === 'running') {
             console.log('Sandbox is already running.');
             return;
@@ -97,17 +106,17 @@ export function registerStart(program: Command): void {
         }
       }
 
-      // Inject API key via secrets file (AUTH-01).
-      // The key file persists at a stable path so Docker can re-mount it on
-      // stop/start cycles. cleanup() is only called on failure.
+      // Inject API key via secrets file when available (AUTH-01).
+      // Returns null for Pro/Max users who authenticate via ~/.claude/ OAuth.
       const secret = injectApiKey();
       let started = false;
       try {
         const binds = [
           ...repoMounts.map(m => m.bindSpec),
           claudeMount.bindSpec,
+          ...(claudeJsonMount ? [claudeJsonMount.bindSpec] : []),
           ...(claudeMdMount ? [claudeMdMount.bindSpec] : []),
-          secret.bindSpec,
+          ...(secret ? [secret.bindSpec] : []),
         ];
 
         const container = await docker.createContainer({
@@ -147,7 +156,7 @@ export function registerStart(program: Command): void {
       } finally {
         // Only clean up on failure — key file must persist while container exists
         // so Docker can re-mount it after stop/start cycles.
-        if (!started) secret.cleanup();
+        if (!started) secret?.cleanup();
       }
     });
 }
