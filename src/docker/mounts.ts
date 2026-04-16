@@ -1,7 +1,6 @@
 import { existsSync, readdirSync, statSync, readFileSync } from 'fs';
 import { homedir } from 'os';
 import { join, basename, resolve, dirname } from 'path';
-import ignore from 'ignore';
 import { SandboxError } from '../errors/index.js';
 
 export interface MountSpec {
@@ -75,6 +74,21 @@ export function resolveClaudeConfigMount(): MountSpec {
 }
 
 /**
+ * Returns the bind spec for ~/.claude.json as a read-only mount.
+ * This is the main Claude Code config file (separate from the ~/.claude/ directory).
+ * Returns null if the file does not exist so callers can skip it gracefully.
+ */
+export function resolveClaudeConfigJsonMount(): MountSpec | null {
+  const hostPath = join(homedir(), '.claude.json');
+  if (!existsSync(hostPath)) return null;
+  return {
+    bindSpec: `${hostPath}:/home/sandbox/.claude.json:ro`,
+    hostPath,
+    containerPath: '/home/sandbox/.claude.json',
+  };
+}
+
+/**
  * Resolve a host CLAUDE.md path to a Dockerode bind spec.
  * Mount target is /workspace/CLAUDE.md (container working directory — D-01).
  * Read-only mount, consistent with ~/.claude/ pattern (D-02).
@@ -99,76 +113,103 @@ export function resolveClaudeMdMount(hostPathRaw: string): MountSpec {
 }
 
 /**
- * Walk up from mountHostPath to monorepoRoot (or fs root if null),
- * collecting .claude-sandbox-ignore files (D-05).
+ * Parse the `include:` list from a .claude-sandbox.yml file.
+ * Only supports the `include:` key — no external YAML dependency needed.
  */
-function findIgnoreFiles(mountHostPath: string, monorepoRoot: string | null): string[] {
-  const files: string[] = [];
-  let dir = mountHostPath;
-  while (true) {
-    const candidate = join(dir, '.claude-sandbox-ignore');
-    if (existsSync(candidate)) files.push(candidate);
-    const parent = dirname(dir);
-    // Stop at monorepoRoot (if configured) or filesystem root
-    if (monorepoRoot !== null && dir === monorepoRoot) break;
-    if (parent === dir) break; // filesystem root
-    dir = parent;
-  }
-  return files;
-}
-
-/**
- * Walk a directory recursively, returning relative paths of all entries.
- */
-function walkDir(root: string, prefix = ''): string[] {
-  const entries: string[] = [];
-  for (const name of readdirSync(root)) {
-    const relPath = prefix ? `${prefix}/${name}` : name;
-    const abs = join(root, name);
-    entries.push(relPath);
-    try {
-      if (statSync(abs).isDirectory()) {
-        entries.push(...walkDir(abs, relPath));
+function parseSandboxYml(content: string): { include: string[] } {
+  const include: string[] = [];
+  let inInclude = false;
+  for (const line of content.split('\n')) {
+    if (line.trim() === 'include:') {
+      inInclude = true;
+      continue;
+    }
+    if (inInclude) {
+      const match = line.match(/^\s+-\s+(.+)$/);
+      if (match) {
+        include.push(match[1]!.trim());
+      } else if (line.trim() !== '' && !/^\s/.test(line)) {
+        // New top-level key — stop reading include list
+        inInclude = false;
       }
-    } catch {
-      // Skip unreadable entries
     }
   }
-  return entries;
+  return { include };
 }
 
 /**
- * Resolve blocked subpaths from .claude-sandbox-ignore files into tmpfs mount specs (D-03, D-04, D-05).
- * Returns an array of TmpfsSpec objects for Dockerode HostConfig.Mounts.
+ * Read .claude-sandbox.yml from a repo root. Throws SandboxError if the file
+ * is missing or contains no 'include:' entries.
  */
-export function resolveBlockedPaths(
-  mount: MountSpec,
-  monorepoRoot: string | null
-): TmpfsSpec[] {
-  const ignoreFiles = findIgnoreFiles(mount.hostPath, monorepoRoot);
-  if (ignoreFiles.length === 0) return [];
+export function readSandboxConfig(repoRoot: string): { include: string[] } {
+  const configPath = join(repoRoot, '.claude-sandbox.yml');
+  if (!existsSync(configPath)) {
+    throw new SandboxError(
+      `No .claude-sandbox.yml found in '${repoRoot}'.`,
+      `Create a .claude-sandbox.yml with an 'include:' list of subdirectories to expose:\n\ninclude:\n  - projects/serviceA\n  - proto`
+    );
+  }
+  const config = parseSandboxYml(readFileSync(configPath, 'utf-8'));
+  if (config.include.length === 0) {
+    throw new SandboxError(
+      `.claude-sandbox.yml in '${repoRoot}' has no 'include:' entries.`,
+      `Add at least one subdirectory to the 'include:' list.`
+    );
+  }
+  return config;
+}
 
-  const ig = ignore();
-  for (const filePath of ignoreFiles) {
-    ig.add(readFileSync(filePath, 'utf-8'));
+/**
+ * Compute tmpfs mask specs for all subdirectories of a mount that are NOT
+ * covered by the whitelist. Walks the host path and masks any directory that
+ * is neither an included path nor an ancestor of one.
+ *
+ * This preserves the full directory tree structure (e.g. Bazel WORKSPACE at
+ * root) while hiding everything outside the whitelist.
+ */
+export function resolveWhitelistMasks(
+  mount: MountSpec,
+  include: string[]
+): TmpfsSpec[] {
+  const masks: TmpfsSpec[] = [];
+
+  function walk(dir: string, relPath: string): void {
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const name of entries) {
+      const childRel = relPath ? `${relPath}/${name}` : name;
+      const childAbs = join(dir, name);
+      let isDir: boolean;
+      try {
+        isDir = statSync(childAbs).isDirectory();
+      } catch {
+        continue;
+      }
+      if (!isDir) continue;
+
+      const isExact = include.some(w => w === childRel);
+      const isAncestor = include.some(w => w.startsWith(`${childRel}/`));
+
+      if (isExact) {
+        // Whitelisted exactly — keep all contents, stop recursing
+      } else if (isAncestor) {
+        // Ancestor of a whitelisted path — keep this dir, recurse to mask siblings
+        walk(childAbs, childRel);
+      } else {
+        // Outside the whitelist — mask with tmpfs
+        masks.push({
+          Type: 'tmpfs' as const,
+          Target: join(mount.containerPath, childRel),
+          TmpfsOptions: { Mode: 0o555 },
+        });
+      }
+    }
   }
 
-  // Find all subdirectories under the mount that match the ignore rules
-  const allRelPaths = walkDir(mount.hostPath);
-  const blocked = allRelPaths.filter(relPath => {
-    try {
-      return (
-        ig.ignores(relPath) &&
-        statSync(join(mount.hostPath, relPath)).isDirectory()
-      );
-    } catch {
-      return false;
-    }
-  });
-
-  return blocked.map(relPath => ({
-    Type: 'tmpfs' as const,
-    Target: join(mount.containerPath, relPath),
-    TmpfsOptions: { Mode: 0o555 },
-  }));
+  walk(mount.hostPath, '');
+  return masks;
 }
