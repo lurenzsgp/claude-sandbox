@@ -17,13 +17,12 @@ export interface SecretMount {
   cleanup: () => void;
 }
 
-export function injectApiKey(): SecretMount {
+export function injectApiKey(): SecretMount | null {
   const apiKey = process.env['ANTHROPIC_API_KEY'];
   if (!apiKey) {
-    throw new SandboxError(
-      'ANTHROPIC_API_KEY is not set in your environment.',
-      'Set it with: export ANTHROPIC_API_KEY=sk-ant-...'
-    );
+    // Pro/Max users authenticate via OAuth credentials in ~/.claude/ (already mounted).
+    // API key is only required for API-tier access.
+    return null;
   }
 
   mkdirSync(CONFIG_DIR, { recursive: true });
