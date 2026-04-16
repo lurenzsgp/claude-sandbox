@@ -30,6 +30,7 @@ export function registerShell(program: Command): void {
         AttachStdout: true,
         AttachStderr: true,
         WorkingDir: '/workspace', // D-12: open at /workspace
+        Env: [`TERM=${process.env.TERM ?? 'xterm-256color'}`],
       });
 
       // hijack: true gives us the raw socket for bidirectional PTY I/O.
