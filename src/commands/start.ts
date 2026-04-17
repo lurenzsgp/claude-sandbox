@@ -5,6 +5,7 @@ import { resolveMount, resolveClaudeConfigMount, resolveClaudeConfigJsonMount, r
 import { ensureImage, IMAGE_TAG } from '../docker/image.js';
 import { injectApiKey } from '../secrets/injector.js';
 import { readState, writeState, reconcileState, type SandboxState } from '../state/manager.js';
+import { preTrustPaths } from '../config/claude-json.js';
 
 const CONTAINER_NAME = 'claude-sandbox';
 
@@ -20,8 +21,7 @@ export function registerStart(program: Command): void {
     .requiredOption(
       '-m, --mount <path>',
       'Host directory to mount (can be specified multiple times)',
-      (val: string, prev: string[]) => [...prev, val],
-      [] as string[]
+      (val: string, prev: string[] | undefined) => [...(prev ?? []), val],
     )
     .option('--recreate', 'Recreate the container even if it already exists (resets container state)')
     .option('--claude-md <path>', 'Path to project CLAUDE.md to mount at /workspace/CLAUDE.md (read-only)')
@@ -106,6 +106,25 @@ export function registerStart(program: Command): void {
         }
       }
 
+      // Guard against stale state: remove any Docker container already using this
+      // name (can happen if the state file was lost or the container was recreated
+      // outside claude-sandbox).
+      try {
+        const stale = docker.getContainer(CONTAINER_NAME);
+        await stale.inspect(); // throws NotFound if absent — skip silently
+        try { await stale.stop(); } catch { /* already stopped */ }
+        await stale.remove();
+      } catch { /* no pre-existing container — proceed */ }
+
+      // Pre-trust /workspace and each mounted repo path in ~/.claude.json (TRUST-01).
+      // Claude Code checks hasTrustDialogAccepted before showing the trust prompt.
+      // ~/.claude.json is mounted :ro in the container so Claude Code cannot write
+      // the trust decision itself — pre-injecting it here skips the prompt entirely.
+      preTrustPaths([
+        '/workspace',
+        ...repoMounts.map(m => m.containerPath),
+      ]);
+
       // Inject API key via secrets file when available (AUTH-01).
       // Returns null for Pro/Max users who authenticate via ~/.claude/ OAuth.
       const secret = injectApiKey();
@@ -123,11 +142,10 @@ export function registerStart(program: Command): void {
           Image: IMAGE_TAG,
           name: CONTAINER_NAME,
           WorkingDir: '/workspace',
-          Tty: true,
-          OpenStdin: true,
           Env: [
             'CLAUDE_SANDBOX=1',
-            // PS1 is set in entrypoint; also set here as a fallback (D-13)
+            'TERM=xterm-256color',
+            'COLORTERM=truecolor',
             'PS1=[sandbox] \\u@\\h:\\w\\$ ',
           ],
           HostConfig: {
