@@ -2,7 +2,7 @@
 
 **Milestone:** v1.0
 **Granularity:** Coarse
-**Total phases:** 2
+**Total phases:** 3
 **Requirements:** 14 v1 requirements
 
 ## Phase 1: Sandbox Isolation
@@ -30,8 +30,6 @@ Plans:
 - [x] Files created inside container are editable on host (UID/GID match)
 - [x] Sandbox cannot access Docker socket or other host resources (isolation enforced)
 
----
-
 ## Phase 2: Project Configuration
 
 **Goal:** Users can bring project-level Claude configuration into the sandbox alongside global settings.
@@ -48,3 +46,20 @@ Plans:
 - [x] User can mount a project-level `CLAUDE.md` file via `claude-sandbox start --claude-md <path>`
 - [x] Project-specific Claude configuration is available inside the sandbox at a location Claude reads automatically
 - [x] Both global `~/.claude/` and project `CLAUDE.md` are active inside the sandbox without conflicts
+
+---
+
+## Phase 3: Claude TUI in Container
+
+**Goal:** Resolve the Claude TUI rendering problem inside the container so the interactive Claude Code interface works correctly.
+
+**Requirements:** TBD
+**Depends on:** Phase 2
+**Plans:** 1/1 plans complete
+
+Plans:
+- [x] 03-01-PLAN.md — Rebase Dockerfile on devcontainer spec: full apt package set, DEVCONTAINER=true, COLORTERM/LINES/COLUMNS env vars
+
+### Success Criteria
+- [x] Claude Code TUI renders correctly inside the container (no display artifacts or broken UI)
+- [x] Interactive session is fully usable via `claude-sandbox shell`

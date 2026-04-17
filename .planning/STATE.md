@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Milestone complete
-stopped_at: Phase 3 context gathered
-last_updated: "2026-04-17T14:51:00.711Z"
+status: Phase 03 complete
+stopped_at: "Phase 3, Plan 01 complete — 03-01-PLAN.md executed and human-verified"
+last_updated: "2026-04-17T16:17:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  completed_phases: 3
+  total_plans: 8
+  completed_plans: 8
 ---
 
 # Project State — Claude Sandbox
@@ -20,13 +20,13 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 
 **Core value:** Claude gets exactly the repos and configuration you give it — nothing more, nothing less.
 
-**Current focus:** Phase 02 — project-configuration
+**Current focus:** Phase 03 — claude-tui-in-container (complete)
 
 ## Current Status
 
-Phase 1 complete. All 5 plans executed and human-verified. Full 5-command CLI working end-to-end: start, stop, restart, status, shell. PTY shell verified with real TTY, secrets injection, Docker socket isolation.
+All 3 phases complete. Phase 1 (5 plans): full 5-command CLI, PTY shell, secrets injection. Phase 2 (2 plans): CLAUDE.md mount, whitelist masking. Phase 3 (1 plan): Dockerfile rebased on devcontainer spec, DEVCONTAINER=true, TUI hang resolved and human-verified.
 
-**Stopped at:** Phase 3 context gathered
+**Stopped at:** Phase 3, Plan 01 complete — 03-01-PLAN.md executed and human-verified
 
 ## Phase Status
 
@@ -65,8 +65,8 @@ Phase 1 complete. All 5 plans executed and human-verified. Full 5-command CLI wo
 
 ## Session Continuity
 
-Last session: 2026-04-17T14:51:00.706Z
-Stopped at: Session resumed, proceeding to execute Phase 2. Plans verified and ready.
+Last session: 2026-04-17T16:17:00.000Z
+Stopped at: Phase 3, Plan 01 complete — TUI hang resolved, all 3 phases done
 
 ## Session Notes
 
@@ -77,6 +77,12 @@ Initialized 2026-04-08.
 - Success criteria derived from goal-backward analysis
 - 100% coverage validated
 
+- **DEVCONTAINER=true required for React Ink TUI:** Claude Code checks this env var to decide between full TUI and fallback renderer. Without it the TUI hangs even with all packages installed (Plan 03-01)
+- **Devcontainer apt package list resolves TUI hang:** less, git, procps, sudo, fzf, zsh, man-db, unzip, gnupg2, gh, iptables, ipset, iproute2, dnsutils, aggregate, jq, nano, vim — these packages provide the ncurses/libtinfo stack React Ink requires (Plan 03-01)
+- **CMD sleep infinity for correct PTY in exec sessions:** exec sessions each get a fresh PTY when container runs sleep infinity; /bin/bash as PID 1 creates an orphaned PTY master that breaks setRawMode (Plan 03-01)
+- **Terminal env injection pattern:** static TERM+COLORTERM in createContainer Env, dynamic LINES+COLUMNS per exec session only — dynamic values must not be baked statically (Plan 03-01)
+
 ### Roadmap Evolution
 
 - Phase 3 added: Resolve Claude TUI problem in container (evaluate reusing nezhar/claude-container base image)
+- Phase 3 Plan 01 executed: Dockerfile rebased on Anthropic devcontainer spec; TUI hang resolved and human-verified
