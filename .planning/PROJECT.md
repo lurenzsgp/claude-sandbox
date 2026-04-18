@@ -23,6 +23,8 @@ Claude gets exactly the repos and configuration you give it — nothing more, no
 ### Active
 
 - [x] User can supply a custom project `CLAUDE.md` via `--claude-md <path>` and have it mounted read-only at `/workspace/CLAUDE.md` inside the sandbox — Validated in Phase 2: project-configuration
+- [x] Claude Code TUI renders correctly inside the container with no display artifacts — Validated in Phase 3: claude-tui-in-container
+- [x] Interactive session fully usable via `claude-sandbox shell` — Validated in Phase 3: claude-tui-in-container
 
 ### Out of Scope
 
@@ -70,4 +72,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 — Phase 2 complete*
+*Last updated: 2026-04-18 — Phase 3 complete (v1.0 milestone complete)*
