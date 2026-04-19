@@ -1,65 +1,26 @@
 # Roadmap: Claude Sandbox
 
-**Milestone:** v1.0
-**Granularity:** Coarse
-**Total phases:** 3
-**Requirements:** 14 v1 requirements
+## Milestones
 
-## Phase 1: Sandbox Isolation
+- ✅ **v1.0 MVP** — Phases 1-3 (shipped 2026-04-19)
 
-**Goal:** Users can launch Claude Code in an isolated Docker container with access only to specified repos, with global Claude configuration and secure API key injection.
+## Phases
 
-**Requirements:** CLI-01, CLI-02, CLI-03, CLI-04, CLI-05, CONT-01, CONT-02, CONT-03, CONT-04, MNT-01, MNT-02, AUTH-01
+<details>
+<summary>✅ v1.0 MVP (Phases 1-3) — SHIPPED 2026-04-19</summary>
 
-**Plans:** 5/5 plans executed
+See full archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
-Plans:
-- [x] 01-01-PLAN.md — Project scaffold: package.json, tsconfig, esbuild, Dockerfile, entrypoint.sh, CLI skeleton
-- [x] 01-02-PLAN.md — Core infrastructure: typed errors, config, state manager, Docker client wrapper, secrets injector
-- [x] 01-03-PLAN.md — Volume mount resolver: path normalization, ~/.claude ro bind, .claude-sandbox-ignore tmpfs shadows
-- [x] 01-04-PLAN.md — Lifecycle commands: image builder + start/stop/restart/status wired into CLI
-- [x] 01-05-PLAN.md — Shell command: PTY/TTY allocation, SIGWINCH propagation, human verification checkpoint
+- [x] Phase 1: Sandbox Isolation (5/5 plans) — completed 2026-04-10
+- [x] Phase 2: Project Configuration (2/2 plans) — completed 2026-04-10
+- [x] Phase 3: Claude TUI in Container (1/1 plan) — completed 2026-04-18
 
-### Success Criteria
-- [x] User can start a persistent sandbox container with selected repos using `claude-sandbox start --mount <path> --mount <path>`
-- [x] User can interact with Claude Code inside the sandbox via `claude-sandbox shell` (interactive terminal)
-- [x] User can check sandbox state with `claude-sandbox status` and restart with `claude-sandbox restart`
-- [x] Global Claude config from `~/.claude/` is available inside the sandbox (read-only)
-- [x] API key is securely injected from host environment (not exposed in `docker inspect`)
-- [x] Container state persists across `stop` / `start` cycles without losing files or state
-- [x] Files created inside container are editable on host (UID/GID match)
-- [x] Sandbox cannot access Docker socket or other host resources (isolation enforced)
+</details>
 
-## Phase 2: Project Configuration
+## Progress
 
-**Goal:** Users can bring project-level Claude configuration into the sandbox alongside global settings.
-
-**Requirements:** CLI-06, MNT-03
-
-**Plans:** 2/2 plans complete
-
-Plans:
-- [x] 02-01-PLAN.md — Foundation: resolveClaudeMdMount() in mounts.ts, claudeMd field on SandboxState, unit tests
-- [x] 02-02-PLAN.md — CLI integration: --claude-md option in start.ts, conflict detection, state persistence, status display
-
-### Success Criteria
-- [x] User can mount a project-level `CLAUDE.md` file via `claude-sandbox start --claude-md <path>`
-- [x] Project-specific Claude configuration is available inside the sandbox at a location Claude reads automatically
-- [x] Both global `~/.claude/` and project `CLAUDE.md` are active inside the sandbox without conflicts
-
----
-
-## Phase 3: Claude TUI in Container
-
-**Goal:** Resolve the Claude TUI rendering problem inside the container so the interactive Claude Code interface works correctly.
-
-**Requirements:** TBD
-**Depends on:** Phase 2
-**Plans:** 1/1 plans complete
-
-Plans:
-- [x] 03-01-PLAN.md — Rebase Dockerfile on devcontainer spec: full apt package set, DEVCONTAINER=true, COLORTERM/LINES/COLUMNS env vars
-
-### Success Criteria
-- [x] Claude Code TUI renders correctly inside the container (no display artifacts or broken UI)
-- [x] Interactive session is fully usable via `claude-sandbox shell`
+| Phase | Name | Milestone | Plans | Status | Completed |
+|-------|------|-----------|-------|--------|-----------|
+| 1 | Sandbox Isolation | v1.0 | 5/5 | Complete | 2026-04-10 |
+| 2 | Project Configuration | v1.0 | 2/2 | Complete | 2026-04-10 |
+| 3 | Claude TUI in Container | v1.0 | 1/1 | Complete | 2026-04-18 |

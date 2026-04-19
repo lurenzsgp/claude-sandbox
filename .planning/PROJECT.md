@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A CLI tool that launches a persistent Docker container giving Claude Code an isolated environment with access only to the repos you explicitly choose. It protects your monorepo from unintended access while preserving your full Claude configuration (global `~/.claude/` and project-level `CLAUDE.md` files).
+A CLI tool that launches a persistent Docker container giving Claude Code an isolated environment with access only to the repos you explicitly choose. Users authenticate fresh per container via `claude /login` — no host session state leaks in.
 
 ## Core Value
 
@@ -12,47 +12,54 @@ Claude gets exactly the repos and configuration you give it — nothing more, no
 
 ### Validated
 
-- [x] Docker-based container that isolates Claude from the host filesystem — Validated in Phase 1: sandbox-isolation
-- [x] CLI tool to start/stop/exec into the container with repo selection — Validated in Phase 1: sandbox-isolation
-- [x] Selective bind-mounts: specified repos mounted as volumes inside the container — Validated in Phase 1: sandbox-isolation
-- [x] `~/.claude/` mounted from host so global Claude settings are available inside the container — Validated in Phase 1: sandbox-isolation
-- [x] `ANTHROPIC_API_KEY` injected from host env at launch via secrets file — Validated in Phase 1: sandbox-isolation
-- [x] Persistent container — state survives across sessions — Validated in Phase 1: sandbox-isolation
-- [x] Claude CLI pre-installed and ready to run inside the container — Validated in Phase 1: sandbox-isolation
+- ✓ Docker-based container that isolates Claude from the host filesystem — v1.0
+- ✓ CLI tool to start/stop/exec into the container with repo selection — v1.0
+- ✓ Selective bind-mounts: specified repos mounted as volumes inside the container — v1.0
+- ✓ `ANTHROPIC_API_KEY` injected from host env at launch via secrets file — v1.0
+- ✓ Persistent container — state survives across sessions — v1.0
+- ✓ Claude CLI pre-installed and ready to run inside the container — v1.0
+- ✓ User can supply a custom project `CLAUDE.md` via `--claude-md <path>` — v1.0
+- ✓ Claude Code TUI renders correctly inside the container — v1.0
+- ✓ Interactive session fully usable via `claude-sandbox shell` — v1.0
 
 ### Active
 
-- [x] User can supply a custom project `CLAUDE.md` via `--claude-md <path>` and have it mounted read-only at `/workspace/CLAUDE.md` inside the sandbox — Validated in Phase 2: project-configuration
-- [x] Claude Code TUI renders correctly inside the container with no display artifacts — Validated in Phase 3: claude-tui-in-container
-- [x] Interactive session fully usable via `claude-sandbox shell` — Validated in Phase 3: claude-tui-in-container
+_(next milestone requirements go here)_
 
 ### Out of Scope
 
 - Full monorepo mount — the whole point is selective access
-- GUI / web UI — terminal-only interface (docker exec / attach)
-- Network isolation — not required; only filesystem access is being constrained
-- Per-sandbox config profiles separate from host — user wants the same `~/.claude/` setup
+- GUI / web UI — terminal-only interface
+- Network isolation — only filesystem access is being constrained
+- `~/.claude/` mount from host — causes TUI issues (session state collision); users start fresh per container
+- Per-sandbox config profiles separate from host — fresh session covers this
 
 ## Context
 
-- The user works in a monorepo and wants to use Claude Code without exposing the entire codebase
-- The existing `composer-cli/` directory in the workspace may be related context or prior work
-- The sandbox should feel like using Claude normally on the host, just with a narrower view of the filesystem
-- The `~/.claude/` mount gives Claude access to custom commands, GSD, memory, hooks — the full local setup
+- Shipped v1.0 with ~880 LOC TypeScript (5 source files + 4 test files)
+- Tech stack: Node.js 18+, Commander.js, Dockerode, esbuild (CJS bundle), vitest
+- Dockerfile rebased on Anthropic devcontainer spec — full apt package set ensures React Ink TUI works
+- Key operational pattern: `DEVCONTAINER=true` + `COLORTERM/LINES/COLUMNS` injected per exec session
+- Auth: `ANTHROPIC_API_KEY` via secrets file bind-mount (Pro/Max users: `claude /login` inside container)
 
 ## Constraints
 
 - **Platform**: Docker must be available on the host (macOS primary target)
-- **Auth**: `ANTHROPIC_API_KEY` must be set in the host environment before launching
+- **Auth**: `ANTHROPIC_API_KEY` must be set in the host environment before launching (or use OAuth via `claude /login`)
 - **Persistence**: Container must retain its state between `stop` / `start` cycles — not `--rm`
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Bind-mount repos (not copy) | Changes made inside container reflect immediately on host | — Pending |
-| Persistent container (not ephemeral) | User wants to return to the same environment across sessions | — Pending |
-| Mount `~/.claude/` from host | Keeps Claude config in sync with host setup without duplication | — Pending |
+| Bind-mount repos (not copy) | Changes inside container reflect immediately on host | ✓ Good |
+| Persistent container (not ephemeral) | User wants to return to the same environment across sessions | ✓ Good |
+| No `~/.claude/` mount | Host session state causes React Ink TUI hang; fresh login per container is cleaner | ✓ Good |
+| CJS esbuild output | Avoids ESM/CJS interop errors with commander@14 on Node 18 | ✓ Good |
+| `hijack:true` in Dockerode exec | `Tty:true` alone returns read-only stream; hijack required for bidirectional PTY | ✓ Good |
+| `sleep infinity` as PID 1 | `/bin/bash` as PID 1 creates orphaned PTY master breaking `setRawMode` | ✓ Good |
+| `DEVCONTAINER=true` env var | Claude Code checks this to choose full TUI vs fallback renderer | ✓ Good |
+| Secrets file bind-mount | API key not visible in `docker inspect` env array | ✓ Good |
 
 ## Evolution
 
@@ -72,4 +79,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-18 — Phase 3 complete (v1.0 milestone complete)*
+*Last updated: 2026-04-19 — v1.0 milestone complete*
