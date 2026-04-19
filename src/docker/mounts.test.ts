@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join, basename } from 'path';
 import { tmpdir } from 'os';
-import { resolveMount, resolveClaudeConfigMount, readSandboxConfig, resolveWhitelistMasks, resolveClaudeMdMount } from './mounts.js';
+import { resolveMount, readSandboxConfig, resolveWhitelistMasks, resolveClaudeMdMount } from './mounts.js';
 import { SandboxError } from '../errors/index.js';
 
 describe('resolveMount', () => {
@@ -31,19 +31,6 @@ describe('resolveMount', () => {
     const result1 = resolveMount(testDir);
     const result2 = resolveMount(testDir + '/');
     expect(result1.hostPath).toBe(result2.hostPath);
-  });
-});
-
-describe('resolveClaudeConfigMount', () => {
-  it('returns a ro bind spec targeting /home/sandbox/.claude', () => {
-    const result = resolveClaudeConfigMount();
-    expect(result.bindSpec).toMatch(/\.claude:\/home\/sandbox\/.claude:ro$/);
-    expect(result.containerPath).toBe('/home/sandbox/.claude');
-  });
-
-  it('host path ends with .claude', () => {
-    const result = resolveClaudeConfigMount();
-    expect(result.hostPath).toMatch(/\/.claude$/);
   });
 });
 

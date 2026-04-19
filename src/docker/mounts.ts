@@ -1,5 +1,4 @@
 import { existsSync, readdirSync, statSync, readFileSync } from 'fs';
-import { homedir } from 'os';
 import { join, basename, resolve, dirname } from 'path';
 import { SandboxError } from '../errors/index.js';
 
@@ -54,37 +53,6 @@ export function resolveMount(hostPathRaw: string): MountSpec {
     bindSpec: `${hostPath}:${containerPath}:rw,cached`,
     hostPath,
     containerPath,
-  };
-}
-
-/**
- * Returns the bind spec for ~/.claude/ as a read-only mount (MNT-02).
- * Container path is /home/sandbox/.claude — the sandbox user's home directory
- * (Dockerfile sets USER sandbox, HOME=/home/sandbox). Using /root/.claude would
- * cause Claude Code to miss its config because the container does not run as root.
- */
-export function resolveClaudeConfigMount(): MountSpec {
-  const hostPath = join(homedir(), '.claude');
-  const containerPath = '/home/sandbox/.claude';
-  return {
-    bindSpec: `${hostPath}:${containerPath}:ro`,
-    hostPath,
-    containerPath,
-  };
-}
-
-/**
- * Returns the bind spec for ~/.claude.json as a read-only mount.
- * This is the main Claude Code config file (separate from the ~/.claude/ directory).
- * Returns null if the file does not exist so callers can skip it gracefully.
- */
-export function resolveClaudeConfigJsonMount(): MountSpec | null {
-  const hostPath = join(homedir(), '.claude.json');
-  if (!existsSync(hostPath)) return null;
-  return {
-    bindSpec: `${hostPath}:/home/sandbox/.claude.json:ro`,
-    hostPath,
-    containerPath: '/home/sandbox/.claude.json',
   };
 }
 

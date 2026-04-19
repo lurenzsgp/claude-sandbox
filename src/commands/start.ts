@@ -1,11 +1,10 @@
 import type { Command } from 'commander';
 import { resolve } from 'path';
 import { createDockerClient, validateMounts } from '../docker/client.js';
-import { resolveMount, resolveClaudeConfigMount, resolveClaudeConfigJsonMount, readSandboxConfig, resolveWhitelistMasks, resolveClaudeMdMount, type MountSpec } from '../docker/mounts.js';
+import { resolveMount, readSandboxConfig, resolveWhitelistMasks, resolveClaudeMdMount, type MountSpec } from '../docker/mounts.js';
 import { ensureImage, IMAGE_TAG } from '../docker/image.js';
 import { injectApiKey } from '../secrets/injector.js';
 import { readState, writeState, reconcileState, type SandboxState } from '../state/manager.js';
-import { preTrustPaths } from '../config/claude-json.js';
 
 const CONTAINER_NAME = 'claude-sandbox';
 
@@ -32,10 +31,8 @@ export function registerStart(program: Command): void {
       // Validate mounts before any Docker call (CONT-03, D-06)
       validateMounts(requestedPaths);
 
-      // Resolve mount specs (MNT-01, MNT-02)
+      // Resolve mount specs (MNT-01)
       const repoMounts = requestedPaths.map(resolveMount);
-      const claudeMount = resolveClaudeConfigMount();
-      const claudeJsonMount = resolveClaudeConfigJsonMount();
 
       // Whitelist-based masking: read .claude-sandbox.yml from each repo root,
       // tmpfs all subdirectories not in the include list (preserves tree structure).
@@ -116,15 +113,6 @@ export function registerStart(program: Command): void {
         await stale.remove();
       } catch { /* no pre-existing container — proceed */ }
 
-      // Pre-trust /workspace and each mounted repo path in ~/.claude.json (TRUST-01).
-      // Claude Code checks hasTrustDialogAccepted before showing the trust prompt.
-      // ~/.claude.json is mounted :ro in the container so Claude Code cannot write
-      // the trust decision itself — pre-injecting it here skips the prompt entirely.
-      preTrustPaths([
-        '/workspace',
-        ...repoMounts.map(m => m.containerPath),
-      ]);
-
       // Inject API key via secrets file when available (AUTH-01).
       // Returns null for Pro/Max users who authenticate via ~/.claude/ OAuth.
       const secret = injectApiKey();
@@ -132,8 +120,6 @@ export function registerStart(program: Command): void {
       try {
         const binds = [
           ...repoMounts.map(m => m.bindSpec),
-          claudeMount.bindSpec,
-          ...(claudeJsonMount ? [claudeJsonMount.bindSpec] : []),
           ...(claudeMdMount ? [claudeMdMount.bindSpec] : []),
           ...(secret ? [secret.bindSpec] : []),
         ];
