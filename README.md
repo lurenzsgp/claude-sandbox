@@ -2,17 +2,16 @@
 
 Run [Claude Code](https://github.com/anthropics/claude-code) inside an isolated Docker container with selective, whitelist-controlled access to your repositories.
 
-The sandbox exposes only the subdirectories you explicitly allow, masking everything else with read-only tmpfs mounts. Your Claude Code credentials are forwarded into the container automatically — no manual configuration needed.
+The sandbox exposes only the subdirectories you explicitly allow, masking everything else with read-only tmpfs mounts. Each container gets a clean Claude Code session — authenticate once with `claude /login` inside the container, then use it like you would on the host.
 
 ## How it works
 
 When you run `claude-sandbox start`:
 
-1. A Docker image is built on first run (takes ~5 minutes; subsequent starts are instant).
+1. A Docker image is built on first run (takes ~5 minutes; subsequent starts are instant). If you later modify the `Dockerfile` or `entrypoint.sh`, the image is rebuilt automatically.
 2. Your repository is bind-mounted into the container at `/workspace/<repo-name>`.
 3. Subdirectories **not listed** in `.claude-sandbox.yml` are overlaid with empty, read-only tmpfs mounts — Claude Code cannot see or write to them.
-4. Your `~/.claude/` directory and `~/.claude.json` are mounted read-only so Claude Code can authenticate immediately.
-5. If `ANTHROPIC_API_KEY` is set in your environment, it is injected via a secrets file (never via `docker inspect`).
+4. If `ANTHROPIC_API_KEY` is set in your environment, it is injected via a secrets file (never via `docker inspect`). Otherwise, run `claude /login` inside the container on first use.
 
 The container runs under your host UID/GID, so files written by Claude Code have the correct ownership.
 
@@ -127,7 +126,7 @@ CLAUDE.md:  /Users/you/projects/my-repo/CLAUDE.md → /workspace/CLAUDE.md
 claude-sandbox shell
 ```
 
-Open an interactive bash session inside the running container. The working directory is `/workspace`. Terminal resize events are forwarded automatically.
+Open an interactive bash session inside the running container. The working directory is `/workspace`. Uses `docker exec -it` directly so Claude Code's TUI gets a genuine kernel PTY.
 
 ## `.claude-sandbox.yml`
 
@@ -157,11 +156,9 @@ With this config, `projects/serviceB` is masked, `proto/` is fully accessible, a
 
 ## Authentication
 
-### Pro / Max (OAuth)
+Each container starts with a clean Claude Code session — no host credentials are mounted in.
 
-No additional setup required. Your `~/.claude/` directory and `~/.claude.json` are mounted read-only into the container at the same paths. Claude Code will pick up your existing session automatically.
-
-### API key
+### API key (recommended)
 
 Set `ANTHROPIC_API_KEY` in your shell before running `start`:
 
@@ -171,6 +168,18 @@ claude-sandbox start --mount /path/to/repo
 ```
 
 The key is written to `~/.claude-sandbox/api-key` (mode `0600`) and bind-mounted into the container at `/run/secrets/anthropic-api-key`. It is injected via the entrypoint script so it never appears in `docker inspect`.
+
+### Pro / Max (OAuth)
+
+Run `claude /login` inside the container after the first `claude-sandbox shell`:
+
+```bash
+claude-sandbox shell
+# inside the container:
+claude /login
+```
+
+The session is stored inside the container and persists across `stop` / `start` cycles.
 
 ## Security model
 
