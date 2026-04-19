@@ -44,6 +44,9 @@ ENV PATH=$PATH:/usr/local/share/npm-global/bin
 # IMPORTANT: Use @anthropic-ai/claude-code — NOT @anthropic-sdk/claude-code (wrong package)
 RUN npm install -g @anthropic-ai/claude-code@latest
 
+# Install GSD (get-shit-done-cc) into Claude Code's global config
+RUN npx get-shit-done-cc --claude --global
+
 # Create sandbox user with matching UID/GID
 RUN groupadd -f -g ${GID} sandbox && \
     useradd -m -u ${UID} -g ${GID} -s /bin/bash sandbox
