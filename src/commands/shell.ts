@@ -1,6 +1,7 @@
+import { spawn } from 'child_process';
 import type { Command } from 'commander';
-import { createDockerClient } from '../docker/client.js';
 import { readState, reconcileState } from '../state/manager.js';
+import { createDockerClient } from '../docker/client.js';
 
 export function registerShell(program: Command): void {
   program
@@ -20,58 +21,43 @@ export function registerShell(program: Command): void {
         process.exit(1);
       }
 
-      const container = docker.getContainer(state.containerId);
+      // Use `docker exec -it` via a child process with stdio:inherit.
+      //
+      // Why not Dockerode container.exec() with hijack:true?
+      // Dockerode gives us a TCP socket (duplex stream) which we manually pipe
+      // to/from process.stdin/stdout. This works for plain bash but breaks
+      // Claude Code's React Ink TUI: Ink calls process.stdin.setRawMode() and
+      // isatty() which require a genuine kernel-level PTY file descriptor — not
+      // a Node.js stream wrapper over a socket. The result is a silent hang.
+      //
+      // With stdio:'inherit', the docker subprocess inherits fd 0/1/2 directly
+      // from the host process. Docker CLI negotiates a real PTY with the daemon
+      // and the container process gets an isatty()=true PTY — identical to what
+      // `docker exec -it` produces when run manually in a terminal.
+      const child = spawn(
+        'docker',
+        ['exec', '-it', state.containerId, '/bin/bash'],
+        {
+          stdio: 'inherit',
+          // Pass host environment so TERM, COLORTERM, etc. reach docker CLI.
+          env: process.env,
+        },
+      );
 
-      // Allocate a real PTY (PITFALL 4: must have Tty: true + AttachStdin/Stdout/Stderr)
-      const exec = await container.exec({
-        Cmd: ['/bin/bash'],
-        Tty: true,
-        AttachStdin: true,
-        AttachStdout: true,
-        AttachStderr: true,
-        WorkingDir: '/workspace', // D-12: open at /workspace
-        Env: [
-          `TERM=${process.env.TERM ?? 'xterm-256color'}`,
-          `COLORTERM=${process.env.COLORTERM ?? 'truecolor'}`,
-          `LINES=${process.env.LINES ?? String(process.stdout.rows ?? 24)}`,
-          `COLUMNS=${process.env.COLUMNS ?? String(process.stdout.columns ?? 80)}`,
-        ],
+      child.on('exit', (code, signal) => {
+        if (signal) {
+          process.kill(process.pid, signal);
+        } else {
+          process.exit(code ?? 0);
+        }
       });
 
-      // hijack: true gives us the raw socket for bidirectional PTY I/O.
-      // Without it Dockerode returns a one-way stream and stdin is ignored.
-      const stream = await exec.start({ hijack: true, stdin: true } as any);
-
-      // Put host stdin into raw mode so Claude Code's interactive TUI works correctly
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
-
-      // Pipe bidirectionally: container stdout → host stdout, host stdin → container stdin
-      stream.pipe(process.stdout);
-      process.stdin.pipe(stream as any);
-
-      // Propagate terminal resize events to the container (PITFALL 4: SIGWINCH)
-      const resize = () => {
-        exec.resize({ h: process.stdout.rows ?? 24, w: process.stdout.columns ?? 80 }).catch(() => {
-          // Ignore resize errors (container may be exiting)
-        });
-      };
-      process.stdout.on('resize', resize);
-      resize(); // Set initial terminal size immediately
-
-      // Clean exit: restore stdin and exit the process
-      stream.on('end', () => {
-        process.stdout.removeListener('resize', resize);
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-        process.exit(0);
-      });
-
-      stream.on('error', (err: Error) => {
-        process.stdout.removeListener('resize', resize);
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-        console.error('\nShell connection error:', err.message);
+      child.on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'ENOENT') {
+          console.error('Error: `docker` CLI not found in PATH. Please install Docker Desktop or the Docker CLI.');
+        } else {
+          console.error('Shell error:', err.message);
+        }
         process.exit(1);
       });
     });
